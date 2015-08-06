@@ -103,7 +103,7 @@
         New: 16,
         TaggedTemplate: 17,
         Member: 18,
-        Primary: 19
+        Primary: 19,
     };
 
     BinaryPrecedence = {
@@ -2400,8 +2400,7 @@
 
         ModuleSpecifier: function (expr, precedence, flags) {
             return this.Literal(expr, precedence, flags);
-        }
-
+        },
     };
 
     merge(CodeGenerator.prototype, CodeGenerator.Expression);
@@ -2442,6 +2441,80 @@
 
         return toSourceNodeWhenNeeded(result, stmt);
     };
+
+    CodeGenerator.Jsx = {
+
+        JSXElement: function (expr, precedence, flags) {
+            var result = [];
+
+            var openingElement = this.generateExpression(expr.openingElement, Precedence)
+
+            return [];
+        },
+
+        JSXSelfClosingElement: function (expr, precedence, flags) {
+        },
+
+        JSXOpeningElement: function (expr, precedence, flags) {
+        },
+
+        JSXClosingElement: function (expr, precedence, flags) {
+        },
+
+        JSXElementName: function (expr, precedence, flags) {
+        },
+
+        JSXIdentifier: function (expr, precedence, flags) {
+        },
+
+        JSXNamespacedName: function (expr, precedence, flags) {
+        },
+
+        JSXMemberExpression: function(expr, precedence, flags) {
+        },
+
+        JSXAttributes: function(expr, precedence, flags) {
+        },
+
+        JSXSpreadAttribute: function(expr, precedence, flags) {
+        },
+
+        JSXAttribute: function(expr, precedence, flags) {
+        },
+
+        JSXAttributeName: function(expr, precedence, flags) {
+        },
+
+        JSXAttributeValue: function(expr, precedence, flags) {
+        },
+
+        JSXDoubleStringCharacters: function(expr, precedence, flags) {
+        },
+
+        JSXDoubleStringCharacter: function(expr, precedence, flags) {
+        },
+
+        JSXSingleStringCharacters: function(expr, precedence, flags) {
+        },
+
+        JSXSingleStringCharacter: function(expr, precedence, flags) {
+        },
+
+        JSXChildren: function(expr, precedence, flags) {
+        },
+
+        JSXChild: function(expr, precedence, flags) {
+        },
+
+        JSXText: function(expr, precedence, flags) {
+        },
+
+        JSXTextCharacter: function(expr, precedence, flags) {
+        },
+
+    }
+
+    merge(CodeGenerator.prototype, CodeGenerator.Jsx)
 
     function generateInternal(node) {
         var codegen;
