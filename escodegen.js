@@ -2415,7 +2415,7 @@
         JSXElement: function (expr, precedence, flags) {
             var result = [], that = this;
 
-            var fragment = this.generateExpression(expr.openingElement, Precedence.jsxElement, {
+            var fragment = this.generateExpression(expr.openingElement, Precedence.Sequence, {
                 allowIn: true,
                 allowCall: true
             });
@@ -2495,6 +2495,8 @@
 
             var fragment = this.generateExpression(expr.name, Precedence.Sequence, 0);
             result.push(fragment);
+            
+            var multiline = expr.attributes.length > 3;
 
             var jsxFragments = [];
             for (var i = 0, len = expr.attributes.length; i < len; ++i) {
@@ -2505,29 +2507,11 @@
                     fragment: fragment,
                     multiline: hasLineTerminator(toSourceNodeWhenNeeded(fragment).toString())
                 });
-                if (expr.attributes.length > 3 && expr.attributes[i].value &&
-                    expr.attributes[i].value.type !== Syntax.Literal) {
-                    jsxFragments[jsxFragments.length - 1].multiline = true;
-                }
             }
-
-            jsxFragments.sort(function(a, b) {
-                if (!a.multiline && !b.multiline) {
-                    return a.name > b.name ? 1 : -1;
-                }
-                if (!a.multiline) {
-                    return -1;
-                }
-                if (!b.multiline) {
-                    return 1;
-                }
-                return a.name > b.name ? 1 : -1;
-            });
 
             withIndent(function(indent) {
                 for (var i = 0, len = jsxFragments.length; i < len; ++i) {
-                    if ((i > 0 && i % 3 === 0) ||
-                        jsxFragments[i].multiline) {
+                    if (multiline) {
                         result.push(newline + indent);
                     } else {
                         result.push(' ');
@@ -2538,22 +2522,18 @@
                 }
             });
 
-            result.push(expr.selfClosing ? '/>' : '>');
+            var fragment = (multiline ? newline : '') + base + (expr.selfClosing ? '/>' : '>');
+            result.push(fragment);
+
             return result;
         },
 
         JSXClosingElement: function (expr, precedence, flags) {
-            var result, that = this;
-
-            withIndent(function(indent) {
-                result = [
-                    indent + '</',
-                    that.generateExpression(expr.name, Precedence.Sequence, 0),
-                    '>'
-                ];
-            });
-
-            return result
+            return [
+                '</',
+                this.generateExpression(expr.name, Precedence.Sequence, 0),
+                '>'
+            ];
         },
 
         // JSXElementName: function (expr, precedence, flags) {
@@ -2602,7 +2582,6 @@
 
                 if (expr.value.type === Syntax.Literal) {
                     fragment = jsxEscapeAttr(expr.value.value, expr.value.raw);
-
                 } else {
                     fragment = this.generateExpression(expr.value, Precedence.Sequence, {
                         allowIn: true,
