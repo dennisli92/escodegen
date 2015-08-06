@@ -2473,7 +2473,7 @@
                         result = [
                             newline + base + indent,
                             result,
-                            newline + base
+                            // newline + base
                         ];
                     } else {
                         result = [
@@ -2487,9 +2487,8 @@
             return result;
         },
 
-        JSXSelfClosingElement: function (expr, precedence, flags) {
-            return 'closing'
-        },
+        // JSXSelfClosingElement: function (expr, precedence, flags) {
+        // },
 
         JSXOpeningElement: function (expr, precedence, flags) {
             var result = ['<'], that = this;
@@ -2544,11 +2543,17 @@
         },
 
         JSXClosingElement: function (expr, precedence, flags) {
-            return [
-                '</',
-                this.generateExpression(expr.name, Precedence.Sequence, 0),
-                '>'
-            ];
+            var result, that = this;
+
+            withIndent(function(indent) {
+                result = [
+                    indent + '</',
+                    that.generateExpression(expr.name, Precedence.Sequence, 0),
+                    '>'
+                ];
+            });
+
+            return result
         },
 
         // JSXElementName: function (expr, precedence, flags) {
