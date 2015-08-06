@@ -2501,12 +2501,7 @@
             var jsxFragments = [];
             for (var i = 0, len = expr.attributes.length; i < len; ++i) {
                 fragment = that.generateExpression(expr.attributes[i], Precedence.Sequence, E_TTF);
-                jsxFragments.push({
-                    expr: expr.attributes[i],
-                    name: expr.attributes[i].name.name,
-                    fragment: fragment,
-                    multiline: hasLineTerminator(toSourceNodeWhenNeeded(fragment).toString())
-                });
+                jsxFragments.push(fragment);
             }
 
             withIndent(function(indent) {
@@ -2517,8 +2512,7 @@
                         result.push(' ');
                     }
 
-                    // generate expression again
-                    result.push(that.generateExpression(jsxFragments[i].expr, Precedence.Sequence, E_TTF));
+                    result.push(jsxFragments[i]);
                 }
             });
 
