@@ -665,11 +665,11 @@
     }
 
     function addComments(stmt, result) {
-        var i, len, comment, save, tailingToStatement, specialBase, fragment,
+        var i, len, comment, save = result, tailingToStatement, specialBase, fragment,
             extRange, range, prevRange, prefix, infix, suffix, count;
 
+
         if (stmt.leadingComments && stmt.leadingComments.length > 0) {
-            save = result;
 
             if (preserveBlankLines) {
                 comment = stmt.leadingComments[0];
@@ -730,8 +730,10 @@
         }
 
         if (stmt.trailingComments) {
-
             if (preserveBlankLines) {
+                if (typeof result !== 'array') {
+                    result = [addIndent(save)];
+                }
                 comment = stmt.trailingComments[0];
                 extRange = comment.extendedRange;
                 range = comment.range;
