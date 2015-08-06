@@ -65,7 +65,7 @@
         FORMAT_MINIFY,
         FORMAT_DEFAULTS;
 
-    estraverse = require('estraverse');
+    estraverse = require('estraverse-fb');
     esutils = require('esutils');
 
     Syntax = estraverse.Syntax;
