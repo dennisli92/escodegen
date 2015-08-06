@@ -2575,7 +2575,7 @@
                 result.push('=');
 
                 if (expr.value.type === Syntax.Literal) {
-                    fragment = jsxEscapeAttr(expr.value.value, expr.value.raw);
+                    fragment = expr.value.raw;
                 } else {
                     fragment = this.generateExpression(expr.value, Precedence.Sequence, {
                         allowIn: true,
