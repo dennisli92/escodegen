@@ -2467,19 +2467,19 @@
             }
 
             if (!(flags & F_JSX_NOINDENT)) {
-                base = base.slice(0, base.length - indent.length);
+                var newBase = base.slice(0, base.length - indent.length);
                 if (hasLineTerminator(toSourceNodeWhenNeeded(result).toString())) {
                     if (flags & F_JSX_NOPAREN) {
                         result = [
-                            newline + base + indent,
+                            newline + newBase + indent,
                             result,
-                            // newline + base
+                            // newline + newBase
                         ];
                     } else {
                         result = [
-                            '(' + newline + base + indent,
+                            '(' + newline + newBase + indent,
                             result,
-                            newline + base + ')'
+                            newline + newBase + ')'
                         ];
                     }
                 }
@@ -2522,7 +2522,7 @@
                 }
             });
 
-            var fragment = (multiline ? newline : '') + base + (expr.selfClosing ? '/>' : '>');
+            var fragment = (multiline ? newline + base : '') + (expr.selfClosing ? '/>' : '>');
             result.push(fragment);
 
             return result;
