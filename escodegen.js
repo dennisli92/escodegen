@@ -142,6 +142,9 @@
         F_DIRECTIVE_CTX = 1 << 4,
         F_SEMICOLON_OPT = 1 << 5;
 
+    var F_JSX_NOINDENT = 1 << 8,
+        F_JSX_NOPAREN = 1 << 9;
+
     //Expression flag sets
     //NOTE: Flag order:
     // F_ALLOW_IN
@@ -2407,6 +2410,244 @@
 
     merge(CodeGenerator.prototype, CodeGenerator.Expression);
 
+    CodeGenerator.Jsx = {
+
+        JSXElement: function (expr, precedence, flags) {
+            var result = [], that = this;
+
+            var fragment = this.generateExpression(expr.openingElement, Precedence.jsxElement, {
+                allowIn: true,
+                allowCall: true
+            });
+            result.push(fragment);
+
+            var jsxFragments = [];
+            var multiline = !expr.openingElement.selfClosing &&
+                hasLineTerminator(toSourceNodeWhenNeeded(fragment).toString());
+
+            var i, len;
+            withIndent(function(indent) {
+                for (i = 0, len = expr.children.length; i < len; ++i) {
+                    if (expr.children[i].type === Syntax.Literal) {
+                        fragment = expr.children[i].raw.trim();
+                        if (fragment) {
+                            jsxFragments.push(fragment);
+                        }
+                        continue;
+                    }
+
+                    fragment = that.generateExpression(expr.children[i], Precedence.Sequence, E_TTF | F_JSX_NOINDENT);
+
+
+        if (extra.comment) {
+            result = addComments(expr, result);
+        }
+        return toSourceNodeWhenNeeded(result, expr);
+    };
+
+                multiline = multiline || jsxFragments.length > 1 ||
+                    (jsxFragments.length &&
+                        hasLineTerminator(toSourceNodeWhenNeeded(jsxFragments[0]).toString()));
+
+                for (i = 0, len = jsxFragments.length; i < len; ++i) {
+                    if (multiline) {
+                        result.push(newline + indent);
+                    }
+                    result.push(jsxFragments[i]);
+                }
+            });
+
+            if (multiline) {
+                result.push(newline + base);
+            }
+
+            if (expr.closingElement) {
+                fragment = that.generateExpression(expr.closingElement, Precedence.Sequence, 0);
+                result.push(fragment);
+            }
+
+            if (!(flags & F_JSX_NOINDENT)) {
+                base = base.slice(0, base.length - indent.length);
+                if (hasLineTerminator(toSourceNodeWhenNeeded(result).toString())) {
+                    if (flags & F_JSX_NOPAREN) {
+                        result = [
+                            newline + base + indent,
+                            result,
+                            newline + base
+                        ];
+                    } else {
+                        result = [
+                            '(' + newline + base + indent,
+                            result,
+                            newline + base + ')'
+                        ];
+                    }
+                }
+            }
+            return result;
+        },
+
+        JSXSelfClosingElement: function (expr, precedence, flags) {
+            return 'closing'
+        },
+
+        JSXOpeningElement: function (expr, precedence, flags) {
+            var result = ['<'], that = this;
+
+            var fragment = this.generateExpression(expr.name, Precedence.Sequence, 0);
+            result.push(fragment);
+
+            var jsxFragments = [];
+            for (var i = 0, len = expr.attributes.length; i < len; ++i) {
+                fragment = that.generateExpression(expr.attributes[i], Precedence.Sequence, E_TTF);
+                jsxFragments.push({
+                    expr: expr.attributes[i],
+                    name: expr.attributes[i].name.name,
+                    fragment: fragment,
+                    multiline: hasLineTerminator(toSourceNodeWhenNeeded(fragment).toString())
+                });
+                if (expr.attributes.length > 3 && expr.attributes[i].value &&
+                    expr.attributes[i].value.type !== Syntax.Literal) {
+                    jsxFragments[jsxFragments.length - 1].multiline = true;
+                }
+            }
+
+            jsxFragments.sort(function(a, b) {
+                if (!a.multiline && !b.multiline) {
+                    return a.name > b.name ? 1 : -1;
+                }
+                if (!a.multiline) {
+                    return -1;
+                }
+                if (!b.multiline) {
+                    return 1;
+                }
+                return a.name > b.name ? 1 : -1;
+            });
+
+            withIndent(function(indent) {
+                for (var i = 0, len = jsxFragments.length; i < len; ++i) {
+                    if ((i > 0 && i % 3 === 0) ||
+                        jsxFragments[i].multiline) {
+                        result.push(newline + indent);
+                    } else {
+                        result.push(' ');
+                    }
+
+                    // generate expression again
+                    result.push(that.generateExpression(jsxFragments[i].expr, Precedence.Sequence, E_TTF));
+                }
+            });
+
+            result.push(expr.selfClosing ? '/>' : '>');
+            return result;
+        },
+
+        JSXClosingElement: function (expr, precedence, flags) {
+            return [
+                '</',
+                this.generateExpression(expr.name, Precedence.Sequence, 0),
+                '>'
+            ];
+        },
+
+        // JSXElementName: function (expr, precedence, flags) {
+        // },
+
+        JSXIdentifier: function (expr, precedence, flags) {
+            return expr.name;
+        },
+
+        JSXNamespacedName: function (expr, precedence, flags) {
+            return [
+                this.generateExpression(expr.namespace, Precedence.Sequence, 0),
+                '.',
+                this.generateExpression(expr.name, Precedence.Sequence, 0)
+            ];
+        },
+
+        JSXMemberExpression: function(expr, precedence, flags) {
+            return [
+                this.generateExpression(expr.object, Precedence.Sequence, E_TFF),
+                '.',
+                this.generateExpression(expr.property, Precedence.Sequence, 0)
+            ];
+        },
+
+        JSXSpreadAttribute: function(expr, precedence, flags) {
+            return [
+                '{',
+                '...',
+                this.generateExpression(expr.argument, Precedence.Assignment, E_TTT),
+                '}'
+            ];
+        },
+
+        JSXAttribute: function(expr, precedence, flags) {
+            var result = [];
+
+            var fragment = this.generateExpression(expr.name, Precedence.Sequence, {
+                allowIn: true,
+                allowCall: true
+            });
+            result.push(fragment);
+
+            if (expr.value) {
+                result.push('=');
+
+                if (expr.value.type === Syntax.Literal) {
+                    fragment = jsxEscapeAttr(expr.value.value, expr.value.raw);
+
+                } else {
+                    fragment = this.generateExpression(expr.value, Precedence.Sequence, {
+                        allowIn: true,
+                        allowCall: true
+                    });
+                }
+                result.push(fragment);
+            }
+            return result;
+        },
+
+        JSXExpressionContainer: function (expr, precedence, flags) {
+            return [
+                '{',
+                this.generateExpression(expr.expression, Precedence.Sequence, E_TTF),
+                '}'
+            ];
+        },
+
+        // JSXAttributeValue: function(expr, precedence, flags) {
+        // },
+
+        // JSXDoubleStringCharacters: function(expr, precedence, flags) {
+        // },
+
+        // JSXDoubleStringCharacter: function(expr, precedence, flags) {
+        // },
+
+        // JSXSingleStringCharacters: function(expr, precedence, flags) {
+        // },
+
+        // JSXSingleStringCharacter: function(expr, precedence, flags) {
+        // },
+
+        // JSXChildren: function(expr, precedence, flags) {
+        // },
+
+        // JSXChild: function(expr, precedence, flags) {
+        // },
+
+        // JSXText: function(expr, precedence, flags) {
+        // },
+
+        // JSXTextCharacter: function(expr, precedence, flags) {
+        // },
+
+    };
+
+    merge(CodeGenerator.prototype, CodeGenerator.Jsx)
+
     CodeGenerator.prototype.generateExpression = function (expr, precedence, flags) {
         var result, type;
 
@@ -2417,6 +2658,7 @@
         }
 
         result = this[type](expr, precedence, flags);
+
 
         if (extra.comment) {
             result = addComments(expr, result);
@@ -2443,80 +2685,6 @@
 
         return toSourceNodeWhenNeeded(result, stmt);
     };
-
-    CodeGenerator.Jsx = {
-
-        JSXElement: function (expr, precedence, flags) {
-            var result = [];
-
-            var openingElement = this.generateExpression(expr.openingElement, Precedence)
-
-            return [];
-        },
-
-        JSXSelfClosingElement: function (expr, precedence, flags) {
-        },
-
-        JSXOpeningElement: function (expr, precedence, flags) {
-        },
-
-        JSXClosingElement: function (expr, precedence, flags) {
-        },
-
-        JSXElementName: function (expr, precedence, flags) {
-        },
-
-        JSXIdentifier: function (expr, precedence, flags) {
-        },
-
-        JSXNamespacedName: function (expr, precedence, flags) {
-        },
-
-        JSXMemberExpression: function(expr, precedence, flags) {
-        },
-
-        JSXAttributes: function(expr, precedence, flags) {
-        },
-
-        JSXSpreadAttribute: function(expr, precedence, flags) {
-        },
-
-        JSXAttribute: function(expr, precedence, flags) {
-        },
-
-        JSXAttributeName: function(expr, precedence, flags) {
-        },
-
-        JSXAttributeValue: function(expr, precedence, flags) {
-        },
-
-        JSXDoubleStringCharacters: function(expr, precedence, flags) {
-        },
-
-        JSXDoubleStringCharacter: function(expr, precedence, flags) {
-        },
-
-        JSXSingleStringCharacters: function(expr, precedence, flags) {
-        },
-
-        JSXSingleStringCharacter: function(expr, precedence, flags) {
-        },
-
-        JSXChildren: function(expr, precedence, flags) {
-        },
-
-        JSXChild: function(expr, precedence, flags) {
-        },
-
-        JSXText: function(expr, precedence, flags) {
-        },
-
-        JSXTextCharacter: function(expr, precedence, flags) {
-        },
-
-    }
-
-    merge(CodeGenerator.prototype, CodeGenerator.Jsx)
 
     function generateInternal(node) {
         var codegen;
@@ -2616,6 +2784,28 @@
         return pair.map.toString();
     }
 
+    // jsx
+    function jsxEscapeAttr(s, raw) {
+        if (s.indexOf('"') >= 0 || s.indexOf('\'') >= 0) {
+            return raw;
+        }
+        return quotes === 'double' ? '"' + s + '"' : '\'' + s + '\'';
+    }
+
+    function jsxHasNode(expr) {
+        if (expr.type !== 'JSXElement') {
+            return false;
+        }
+
+        for (var i = 0, len = expr.children.length; i < len; ++i) {
+            if (expr.children[i].type === 'JSXElement') {
+                return true;
+            }
+        }
+        return false;
+    }
+    // end jsx
+    
     FORMAT_MINIFY = {
         indent: {
             style: '',
