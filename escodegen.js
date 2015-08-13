@@ -2438,12 +2438,9 @@
 
                     fragment = that.generateExpression(expr.children[i], Precedence.Sequence, E_TTF | F_JSX_NOINDENT);
 
-
-        if (extra.comment) {
-            result = addComments(expr, result);
-        }
-        return toSourceNodeWhenNeeded(result, expr);
-    };
+                    jsxFragments.push(fragment);
+                    multiline = multiline || jsxHasNode(expr.children[i]);
+                }
 
                 multiline = multiline || jsxFragments.length > 1 ||
                     (jsxFragments.length &&

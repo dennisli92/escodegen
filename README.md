@@ -1,3 +1,5 @@
+## Modified Build of Escodegen with JSX support. Based off of https://github.com/ng-vu/escodegen-jsx
+
 ## Escodegen
 [![npm version](https://badge.fury.io/js/escodegen.svg)](http://badge.fury.io/js/escodegen)
 [![Build Status](https://secure.travis-ci.org/estools/escodegen.svg)](http://travis-ci.org/estools/escodegen)

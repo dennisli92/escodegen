@@ -1,7 +1,7 @@
 {
-    "name": "escodegen-jsx",
-    "description": "ECMAScript code generator",
-    "homepage": "http://github.com/estools/escodegen",
+    "name": "escodegen-fb",
+    "description": "ECMAScript code generator with JSX suport",
+    "homepage": "http://github.com/dennisli92/escodegen",
     "main": "escodegen.js",
     "bin": {
         "esgenerate": "./bin/esgenerate.js",
@@ -19,16 +19,9 @@
     "engines": {
         "node": ">=0.10.0"
     },
-    "maintainers": [
-        {
-            "name": "Yusuke Suzuki",
-            "email": "utatane.tea@gmail.com",
-            "web": "http://github.com/Constellation"
-        }
-    ],
     "repository": {
         "type": "git",
-        "url": "http://github.com/estools/escodegen.git"
+        "url": "http://github.com/dennisli92/escodegen.git"
     },
     "dependencies": {
         "estraverse": "^4.1.0",
